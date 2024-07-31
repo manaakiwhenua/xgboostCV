@@ -15,7 +15,7 @@ source(paste0(ScriptDir,"xgb.cv.interaction.r"))
 source(paste0(ScriptDir,"xgb.cv.makefolds.R"))
 
 xgb.cv.multi = function(Data,Predictors,Response,Objective = "multi:softprob",Metric = "mlogloss",path,Nfolds = 10,Nrounds = 10000,LearningRate = 0.001,
-                        Nthread = 2,MaxDepth=3,save = TRUE,Folds = NULL)
+                        Nthread = 2,MaxDepth=3,save = TRUE,Folds = NULL, DoInteraction = TRUE)
 {
 
 ###Need to provide number of classes to xgb.cv
@@ -91,13 +91,15 @@ for(class in 1:length(Classes))
 ###Do interaction last as thas can be most time-consuming step
 ###when there a many variables
 InteractionList = list()
+if(DoInteraction == TRUE)
+{
 for(rl in 1:ncol(cv$pred))
   {
   Interaction = xgb.cv.interaction(cv,na.omit(CVtrain_x),Predictors,Nfolds,ResponseLevel = rl)
   Key = paste0("ResponseLevel_",rl)
   InteractionList[[Key]] = Interaction
   }
-
+}
 ###Built list object for output
 OutList = list()
 Key = "Model"
@@ -109,7 +111,8 @@ OutList[[Key]] = Confusion
 Key = "Predictor importance"
 OutList[[Key]]= Importance
 Key = "Interaction"
-OutList[[Key]] = InteractionList
+if(DoInteraction == TRUE)
+  OutList[[Key]] = InteractionList
 
 ###Return output to environment
 return(c(OutList))

@@ -43,14 +43,14 @@ xgb.cv.interaction = function(cv,CVtrain_x,Predictors,Nfolds,ResponseLevel = 1, 
     ###extract the pairwise interactions
     ###normalize = FALSE does not standardise for size on main effects
     Int = (h2_pairwise(s, normalize = FALSE))
-    
-    ###Where there are no interactions Int may be empty.
+     ###Where there are no interactions Int may be empty.
     if(is.null(Int)==FALSE)
      {
+     Int$IntVars = as.character(row.names(Int))
+     Int = Int[[1]]
      Int <- as.data.frame(Int[,ResponseLevel])
      colnames(Int) = "Int"
      Int$IntVars = as.character(row.names(Int))
-     Int = as.data.frame(Int)
      AllInt = rbind(AllInt,Int)
      }
     }

@@ -24,7 +24,7 @@ dir.create(path)
 
 ###set "hyper-parameters"
 ###results for different parameter combinations can be stored separately
-###by using parameters to define "path"
+###by using paramters to define "path"
 Nthread = 2
 MaxDepth = 3
 Nfolds = 10
@@ -40,6 +40,7 @@ CV$"Predictor importance"
 ###in this case need to apply xgb.Booster.complete() to fold models
 ###This is done automatically in xgb.cv.perspective()
 cv = readRDS(paste0(path,"xgb.cv.multi.rds"))
+
 
 ###The wrapper function output includes the output from xgb.cv
 ###so you can retrieve the fold models like this too.
@@ -67,6 +68,8 @@ path = paste0(ScriptDir,"IrisFoldVector/")
 dir.create(path)
 CVfold <-xgb.cv.multi(Data = iris,Predictors=Predictors,Response=Response,path=path,Nfolds = Nfolds,Nrounds = Nrounds,LearningRate = LearningRate,
                   Nthread = Nthread,MaxDepth=MaxDepth, save = TRUE,Folds = Group)
+
+
 #############################################################
 #############################################################
 #############################################################
@@ -96,9 +99,6 @@ MaxDepth = 3
 Nfolds = 10
 Nrounds = 10000
 LearningRate = 0.1
-
-###Check that application of monotone constraints (no change in sign of slope linking predictor and response)
-###are working as intended
 Monotone = c(1,1,-1,0)
 CV <-xgb.cv.logistic(Data=Data,Predictors=Predictors,Response=Response,path=path,Nrounds = Nrounds,LearningRate = LearningRate,
                 Nthread = 2,MaxDepth=MaxDepth,save = TRUE,Monotone=Monotone)
@@ -139,11 +139,7 @@ Data$versicolor = ifelse(Data$Species == "versicolor",1,0)
 Data$virginica = ifelse(Data$Species == "virginica",1,0)
 Predictors = colnames(Data[c(1,2,4,6:8)])
 Response = colnames(Data[3])
-
-###Check that application of monotone constraints (no change in sign of slope linking predictor and response)
-###are working as intended
 Monotone = c(-1,0,-1,0,0,0)
-
 ###Set path for storing results
 path = paste0(ScriptDir,Response,"/")
 dir.create(path)

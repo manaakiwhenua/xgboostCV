@@ -11,7 +11,7 @@ source(paste0(ScriptDir,"xgb.cv.interaction.r"))
 source(paste0(ScriptDir,"xgb.cv.makefolds.R"))
 
 xgb.cv.logistic = function(Data,Predictors,Response,Objective = "binary:logistic",Metric = "logloss",path,Nfolds = 10,Nrounds = 10000,LearningRate=0.001
-                           ,Nthread = 2,MaxDepth=3,save = FALSE,Folds = NULL, Monotone = NULL )
+                           ,Nthread = 2,MaxDepth=3,save = TRUE,Folds = NULL, Monotone = NULL,DoInteraction = TRUE)
 {
 CVtrain_x = as.matrix(Data[, colnames(Data) %in% Predictors])
 CVtrain_y = Data[,colnames(Data) == Response]
@@ -74,7 +74,8 @@ for(var in 1:length(Predictors))
 
 
 ###Do interaction last as hstats changes model predictions somehow in partial plots
-Interaction = xgb.cv.interaction(cv,na.omit(CVtrain_x),Predictors,Nfolds)
+if(DoInteraction == TRUE)
+  Interaction = xgb.cv.interaction(cv,na.omit(CVtrain_x),Predictors,Nfolds)
 
 OutList = list()
 Key = "Model"
@@ -86,6 +87,7 @@ OutList[[Key]] = Confusion
 Key = "Predictor importance"
 OutList[[Key]]= Importance
 Key = "Interaction"
-OutList[[Key]] = Interaction
+if(DoInteraction == TRUE)
+  OutList[[Key]] = Interaction
 return(c(OutList))
 }

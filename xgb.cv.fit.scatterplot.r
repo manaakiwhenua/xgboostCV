@@ -11,7 +11,7 @@ xgbm.cv.fit.scatterplot = function(pred,CVtrain_y,path)
   png(Filename, height = 1600,width = 1600)
   par(mar = c(10,12,12,2), cex.main = 4,cex.lab = 3.6,cex.axis = 3.4,mgp = c(7,3.5,0))
   plot(pred~CVtrain_y, main = Title,
-          xlab = paste0("Fitted response"),ylab = paste0("Observed response"))
+          xlab = paste0("Observed response"),ylab = paste0("Fitted response"))
   abline(0,1,col = 2,lwd = 3)
   dev.off()
   }
