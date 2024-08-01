@@ -2,6 +2,7 @@
 ###Predictions are not summarised across fold models to allow flexibility 
 ###In expressing results
 ###Predictors must be identical to predictors names used to fit models in xgb.cv
+###Predictor data must be numerical
 xgb.cv.predict = function(cv,PredData, Predictors = Predictors,Nfolds)
 {
 PredData = as.matrix(PredData[,colnames(PredData) %in% Predictors])
