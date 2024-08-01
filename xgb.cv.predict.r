@@ -3,6 +3,7 @@
 ###in expressing results
 ###Predictors must be identical to predictors names used to fit models in xgb.cv
 ###PredData must be numerical
+###Predictions for multi-level responses will be stacked
 xgb.cv.predict = function(cv, ###xgb.cv model object
                           PredData, ###Data on which to make predictions 
                           Predictors = Predictors, ###Names of predictor variables
