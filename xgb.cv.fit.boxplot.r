@@ -42,3 +42,4 @@ xgbm.cv.fit.boxplot.logistic = function(pred,###$pred from xgb.cv output
           xlab = paste0("Observed success"),ylab = paste0("Fitted probability"))
   dev.off()
   }
+

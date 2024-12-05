@@ -1,3 +1,4 @@
+#<<<<<<< HEAD
 library(caret)
 library(ggplot2)
 library(pdp)
@@ -107,3 +108,4 @@ if(DoInteraction == TRUE)
   OutList[[Key]] = Interaction
 return(c(OutList))
 }
+
