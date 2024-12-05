@@ -42,16 +42,30 @@ PredClass = ifelse(cv$pred >0.5,1,0)
 ###Test accuracy of predictions
 Confusion = confusionMatrix(as.factor(PredClass),as.factor(CVtrain_y))
 
-###Calculate ROC
+###Calculate Out of Bag ROC
 Pred = cv$pred[order(CVtrain_y)]
 Truth = CVtrain_y[order(CVtrain_y)]
-ROC = roc_auc_vec(
+CVROC = roc_auc_vec(
   estimate = Pred,
   truth = as.factor(Truth),event_level="second")
 
+###Calculate ROC for mean training preds across fold models
+Preds = vector(length = 0)
+Truth = vector(length = 0)
+for(fold in 1:Nfolds)
+ {
+ Model = xgb.Booster.complete(cv$models[[fold]])
+ Preds = c(Preds,predict(Model, newdata = CVtrain_x[-(cv$folds[[fold]]),]))
+ Truth = c(Truth,CVtrain_y[-(cv$folds[[fold]])])
+ }
+Preds = Preds[order(Truth)]
+Truth = Truth[order(Truth)]
 
+TrainingROC = roc_auc_vec(
+  estimate = Preds,
+  truth = as.factor(Truth),event_level="second")
 ###Print box plots of predicted probabilities against observed occurrences for each class 
-xgbm.cv.fit.boxplot.logistic(cv$pred,Data[, colnames(Data) == Response],ROC,path)
+xgbm.cv.fit.boxplot.logistic(cv$pred,Data[, colnames(Data) == Response],ROC = c(TrainingROC,CVROC),path)
 
 ####Use custom function to generate predictor importance bar plots
 Filename = paste0(path,"PredictorImportance.png")
@@ -80,8 +94,10 @@ if(DoInteraction == TRUE)
 OutList = list()
 Key = "Model"
 OutList[[Key]] = cv
-Key = "ROC"
-OutList[[Key]] = ROC
+Key = "OOBROC"
+OutList[[Key]] = CVROC
+Key = "TrainingROC"
+OutList[[Key]] = TrainingROC
 Key = "ConfusionMatrix"
 OutList[[Key]] = Confusion
 Key = "Predictor importance"

@@ -12,15 +12,13 @@ xgb.cv.predict = function(cv, ###xgb.cv model object
                           )
 {
 ###Predict function requires data as a matrix
-PredData = as.matrix(PredData[,colnames(PredData) %in% Predictors])
-Preds = vector(length = 0)
-Fold = vector(length = 0)
+PredX = as.matrix(PredData[,colnames(PredData) %in% Predictors])
+Preds = as.data.frame(matrix(nrow = nrow(PredX), ncol = 0))
 for(fold in 1:Nfolds)
  {
  Model = xgb.Booster.complete(cv$models[[fold]])
- Preds = c(Preds,predict(Model, newdata = PredData))
- Fold = c(Fold, rep(fold, times = nrow(PredData)))
+ Preds = cbind(Preds,predict(Model, newdata = PredX))
  }
-return(cbind(Fold,Preds))  
+return(Preds)  
 }
 

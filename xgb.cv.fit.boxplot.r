@@ -1,8 +1,10 @@
 ##################################################
-###Simple boxplot of predicted probabilities for 
+###Simple boxplot of predicted probabilities for out of bag observations for 
 ###binary and multiclass responses
 ###Separate plots fitted for each level of multiclass responses
 ###Designed for easy inspection of xgb.cv predictions
+###Use out of bag predictions as better indication of ability to 
+###discriminate success or failure in new data
 ##################################################
 
 xgbm.cv.fit.boxplot.multi = function(pred, ###$pred from xgb.cv output
@@ -32,7 +34,7 @@ xgbm.cv.fit.boxplot.logistic = function(pred,###$pred from xgb.cv output
   Y = CVtrain_y
   Pred = pred[order(Y)]
   Y=Y[order(Y)]
-  Title = paste0("ROC = ",round(ROC,digits = 3))
+  Title = paste0("Training ROC = ",round(ROC[1],digits = 3),"; OOB ROC = ",round(ROC[2],digits = 3))
   Filename = paste0(path,"FitBoxplot.png")
   png(Filename, height = 1600,width = 1600)
   par(mar = c(10,12,12,2), cex.main = 4,cex.lab = 3.6,cex.axis = 3.4,mgp = c(7,2,0))
