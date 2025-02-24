@@ -91,7 +91,7 @@ xgbm.cv.partial = function(cv,Nfolds,CVtrain_x,var,path,CVtrain_y,ResponseName =
   Title = Predictors[var]
   Filename = paste0(path,ResponseName,".",Predictors[var],".partial.png")
   png(Filename,width = 1800, height = 1600)
-  par(mfcol = c(1,1), cex.main = 5, cex.lab = 4.8, cex.axis = 4.6, mar = c(10,12,8,2), 
+  par(mfcol = c(1,1), cex.main = 5, cex.lab = 4.8, cex.axis = 4.6, mar = c(10,12,8,8), 
       mgp = c(7,2,0),font.lab = 2,oma = c(0, 0, 9, 0))
   plot(PartialPreds[,1],PartialPreds[,2], ylim = c(min(PartialPreds[,2]),max(PartialPreds[,2])),pch = NA,
        xlab = Predictors[var], ylab = ResponseName,main = Title)
