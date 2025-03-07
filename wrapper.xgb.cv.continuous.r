@@ -35,8 +35,6 @@ cv <- xgb.cv(data = CVtrain_x, stratified = TRUE,label = CVtrain_y,nrounds = Nro
              max_depth = MaxDepth, eta = min(50,Nrounds),objective = Objective,metric = Metric,prediction = TRUE,print_every_n = 50,learning_rate = LearningRate,
              save_models = TRUE,early_stopping_rounds = 50,callbacks = list(cb.cv.predict(save_models = TRUE)))
 Nfolds = length(cv$models)
-#mean(CVtrain_y)
-#mean(cv$pred)
 Cor = round(cor(CVtrain_y,cv$pred),digits = 3)
 if(save==TRUE)
   saveRDS(cv,paste0(path,"xgb.cv.continuous.rds"))

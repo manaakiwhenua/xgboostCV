@@ -1,5 +1,5 @@
 rm(list = ls())
-ScriptDir = r"[C:\Users\MasonN\OneDrive - MWLR\SourceFiles\xgb.cv\]"
+ScriptDir = r"[C:\Users\masonn\OneDrive - MWLR\Documents\GitHub\xgboostCV\]"
 
 #############################################################
 ###Call a wrapper function which fits cross-validated multiclass models
@@ -80,7 +80,6 @@ CVfold <-xgb.cv.multi(Data = iris,Predictors=Predictors,Response=Response,path=p
 ###to check custom functions are working as expected
 #############################################################
 rm(list = ls())
-ScriptDir = r"[C:\Users\MasonN\OneDrive - MWLR\SourceFiles\xgb.cv\]"
 source(paste0(ScriptDir,"wrapper.xgb.cv.logistic.r"))
 ###Set path for storing results
 path = paste0(ScriptDir,"virginica/")
@@ -93,13 +92,13 @@ Data$virginica = ifelse(Data$Species == "virginica",1,0)
 Response = "virginica"
 CVtrain_x = as.matrix(Data[, colnames(Data) %in% Predictors])
 CVtrain_y = Data[,colnames(Data) == Response]
-colnames(CVtrain_x)
 Nthread = 2
 MaxDepth = 3
 Nfolds = 10
 Nrounds = 10000
 LearningRate = 0.1
 Monotone = c(1,1,-1,0)
+
 CV <-xgb.cv.logistic(Data=Data,Predictors=Predictors,Response=Response,path=path,Nrounds = Nrounds,LearningRate = LearningRate,
                 Nthread = 2,MaxDepth=MaxDepth,save = TRUE,Monotone=Monotone)
 CV$"Predictor importance"
@@ -128,7 +127,6 @@ CVfold <-xgb.cv.logistic(Data=Data,Predictors=Predictors,Response=Response,path=
 ###to check custom functions are working as expected
 #############################################################
 rm(list = ls())
-ScriptDir = r"[C:\Users\MasonN\OneDrive - MWLR\SourceFiles\xgb.cv\]"
 source(paste0(ScriptDir,"wrapper.xgb.cv.continuous.R"))
 Data = iris
 ###code species as binary variables
@@ -151,6 +149,16 @@ Nrounds = 10000
 LearningRate = 0.01
 CV <-xgb.cv.continuous(Data = Data,Predictors = Predictors,Response=Response,Nfolds = Nfolds,path=path,Nrounds = Nrounds,LearningRate = LearningRate,
                 Nthread = 2,MaxDepth=MaxDepth, Monotone = Monotone)
+
+PredData <- Data[,c(1,2,4,6:8)]
+PredData[1,] <- 0
+
+Predictions <- xgb.cv.predict(CV$Model, ###xgb.cv model object
+                          PredData, ###Data on which to make predictions 
+                          Predictors = Predictors, ###Names of predictor variables
+                          Nfolds=10 ###Number of fold models this could be obtained 
+                          ###automatically from model object
+)
 #cv = readRDS(paste0(path,"xgb.cv.continuous.rds"))
 cv <-CV$Model
 plot(Data$Petal.Width,cv$pred)
