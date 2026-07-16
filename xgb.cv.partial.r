@@ -70,36 +70,375 @@ dev.off()
 }
 
 ###Binary and continuous responses
-xgbm.cv.partial = function(cv,Nfolds,CVtrain_x,var,path,CVtrain_y,ResponseName = "yhat")
-  {
-  MeanY = mean(CVtrain_y)
+xgbm.cv.partial = function(
+    cv,
+    Nfolds,
+    CVtrain_x,
+    var,
+    CVtrain_y,
+    Response,
+    ResponseName = "yhat",
+    PredictorLabels = colnames(CVtrain_x),
+    PredictorFileName,
+    ylim = NULL,
+    ReturnData = FALSE,
+    PartialPreds = NULL,
+    PartialDir,
+    PlotPoints = FALSE,
+    CI,
+    PlotMeanResponse = TRUE
+)
+{
+  MeanY = mean(na.omit(CVtrain_y))
   Predictors = colnames(CVtrain_x)
-  PartialPreds = as.data.frame(matrix(nrow = 0,ncol = 3))
-  colnames(PartialPreds) = c("x","y","Fold")
-  for(fold in 1:Nfolds)
+  
+  ### Align predictor labels to model predictor order
+  PredictorLabels = PredictorLabels[Predictors]
+  PredictorLabels[is.na(PredictorLabels)] = Predictors[is.na(PredictorLabels)]
+  
+  
+  ### Calculate partial dependence if not supplied
+  if(is.null(PartialPreds))
+  {
+    PartialPreds = as.data.frame(matrix(nrow = 0,ncol = 3))
+    colnames(PartialPreds) = c("x","y","Fold")
+    
+    for(fold in 1:Nfolds)
     {
-    Model = cv$models[[fold]]
-    ###call partialPlot to get partial effect predictions
-    Partial = partial_dep(object = Model, v = Predictors[var], X = CVtrain_x)
-    Partial = Partial$data
-    Partial$Fold = fold
-    colnames(Partial) = colnames(PartialPreds)
-    PartialPreds = rbind(PartialPreds,Partial)
+      Model = cv$models[[fold]]
+      
+      Partial = partial_dep(
+        object = Model,
+        v = Predictors[var],
+        X = CVtrain_x
+      )
+      
+      Partial = Partial$data
+      Partial$Fold = fold
+      
+      colnames(Partial) = colnames(PartialPreds)
+      
+      PartialPreds = rbind(PartialPreds,Partial)
     }
-  ###Plot partial depency for each fold model and mean across fold models
-  PartialPredsMean = aggregate(PartialPreds[,2],by = list(PartialPreds[,1]),FUN = mean)
-  Title = Predictors[var]
-  Filename = paste0(path,ResponseName,".",Predictors[var],".partial.png")
-  png(Filename,width = 1800, height = 1600)
-  par(mfcol = c(1,1), cex.main = 5, cex.lab = 4.8, cex.axis = 4.6, mar = c(10,12,8,8), 
-      mgp = c(7,2,0),font.lab = 2,oma = c(0, 0, 9, 0))
-  plot(PartialPreds[,1],PartialPreds[,2], ylim = c(min(PartialPreds[,2]),max(PartialPreds[,2])),pch = NA,
-       xlab = Predictors[var], ylab = ResponseName,main = Title)
-  for(fold in 1:Nfolds)
-    lines(PartialPreds[PartialPreds$Fold == fold,1],PartialPreds[PartialPreds$Fold == fold,2],lty=3,col = fold,lwd = 3)
-  lines(PartialPredsMean[,1],PartialPredsMean[,2],lty=1,col = 1,lwd = 10)
-  ###Mean of response is proxy for neutral patrial effect of predictors
-  ###Acts as a check the partial effects are estimated correctly
-  abline(h=MeanY,lwd = 8, lty = 2,col = 2)
-  dev.off()
   }
+  
+  
+  ### Return PD data only
+  if(ReturnData)
+    return(PartialPreds)
+  
+  
+  ### Summarise partial predictions across folds
+  PartialSummary = aggregate(
+    y ~ x,
+    data = PartialPreds,
+    FUN = function(z)
+    {
+      c(
+        mean = mean(z),
+        sd = sd(z),
+        n = length(z)
+      )
+    }
+  )
+  
+  PartialSummary = data.frame(
+    x = PartialSummary$x,
+    Mean = PartialSummary$y[, "mean"],
+    SD = PartialSummary$y[, "sd"],
+    N = PartialSummary$y[, "n"]
+  )
+  
+  
+  ### Calculate confidence intervals only if requested
+  if(!is.na(CI))
+  {
+    z = qnorm(1 - (1-CI)/2)
+    
+    PartialSummary$Lower =
+      PartialSummary$Mean -
+      z * PartialSummary$SD / sqrt(PartialSummary$N)
+    
+    PartialSummary$Upper =
+      PartialSummary$Mean +
+      z * PartialSummary$SD / sqrt(PartialSummary$N)
+  }
+  
+  
+  Title = PredictorLabels[var]
+  
+  Filename = paste0(
+    PartialDir,
+    Response,
+    ".",
+    PredictorFileName,
+    ".partial.png"
+  )
+  
+  
+  ### Determine plotting limits
+  if(is.null(ylim))
+  {
+    if(!is.na(CI))
+    {
+      ylim = range(
+        c(
+          PartialSummary$Lower,
+          PartialSummary$Upper,
+          MeanY
+        ),
+        na.rm = TRUE
+      )
+    }
+    else
+    {
+      ylim = range(
+        c(
+          PartialSummary$Mean,
+          MeanY
+        ),
+        na.rm = TRUE
+      )
+    }
+  }
+  
+  
+  png(
+    Filename,
+    width = 1800,
+    height = 1600
+  )
+  
+  par(
+    mfcol = c(1,1),
+    cex.main = 5,
+    cex.lab = 4.8,
+    cex.axis = 4.6,
+    mar = c(10,12,8,8),
+    mgp = c(7,2,0),
+    font.lab = 2,
+    oma = c(0,0,9,0)
+  )
+  
+  
+  plot(
+    PartialSummary$x,
+    PartialSummary$Mean,
+    ylim = ylim,
+    type = "n",
+    xaxt = "n",
+    xlab = PredictorLabels[var],
+    ylab = ResponseName,
+    main = Title
+  )
+  ### Draw x-axis
+  if(PlotPoints)
+  {
+    ObsValues = sort(unique(CVtrain_x[, Predictors[var]]))
+    AutoTicks = axTicks(1)
+    
+    if(length(ObsValues) <= length(AutoTicks))
+    {
+      axis(
+        side = 1,
+        at = ObsValues,
+        labels = ObsValues
+      )
+    }
+    else
+    {
+      axis(1)
+    }
+  }
+  else
+  {
+    axis(1)
+  }
+  
+  if(PlotPoints)
+  {
+    ### Point estimates with optional CI error bars
+    
+    if(!is.na(CI))
+    {
+      ### Width of horizontal error bar caps (2% of x-axis range)
+      CapWidth = 0.02 * diff(range(PartialSummary$x, na.rm = TRUE))
+      
+      ### Vertical error bars
+      segments(
+        x0 = PartialSummary$x,
+        y0 = PartialSummary$Lower,
+        x1 = PartialSummary$x,
+        y1 = PartialSummary$Upper,
+        lwd = 3
+      )
+      
+      ### Lower caps
+      segments(
+        x0 = PartialSummary$x - CapWidth,
+        y0 = PartialSummary$Lower,
+        x1 = PartialSummary$x + CapWidth,
+        y1 = PartialSummary$Lower,
+        lwd = 3
+      )
+      
+      ### Upper caps
+      segments(
+        x0 = PartialSummary$x - CapWidth,
+        y0 = PartialSummary$Upper,
+        x1 = PartialSummary$x + CapWidth,
+        y1 = PartialSummary$Upper,
+        lwd = 3
+      )
+    }
+    
+    points(
+      PartialSummary$x,
+      PartialSummary$Mean,
+      pch = 16,
+      cex = 4
+    )
+    
+  }
+  else
+  {
+    ### Individual fold curves
+    
+    for(fold in 1:Nfolds)
+    {
+      lines(
+        PartialPreds[PartialPreds$Fold == fold,1],
+        PartialPreds[PartialPreds$Fold == fold,2],
+        lty = 3,
+        col = fold,
+        lwd = 3
+      )
+    }
+    
+    
+    ### Mean partial dependence curve
+    lines(
+      PartialSummary$x,
+      PartialSummary$Mean,
+      lwd = 10
+    )
+    
+    
+    ### Optional confidence ribbon
+    if(!is.na(CI))
+    {
+      polygon(
+        c(
+          PartialSummary$x,
+          rev(PartialSummary$x)
+        ),
+        c(
+          PartialSummary$Lower,
+          rev(PartialSummary$Upper)
+        ),
+        border = NA
+      )
+    }
+  }
+  
+  
+  ### Mean response reference line
+  ### Mean response reference line
+  if(PlotMeanResponse)
+    {
+    abline(
+      h = MeanY,
+      lwd = 8,
+      lty = 2,
+      col = 2
+    )
+    }
+  
+  
+  dev.off()
+  
+  invisible(PartialSummary)
+}
+
+############################################################
+## Combine PNG files into a multipanel figure
+############################################################
+library(png)
+library(grid)
+library(gridExtra)
+png.multipanel <- function(
+    png_dir,
+    outfile,
+    ncol = 2,
+    width = 8,
+    height = 12,
+    labels = LETTERS,
+    fontsize = 18
+){
+  
+  png_files <- list.files(
+    png_dir,
+    pattern = "\\.png$",
+    full.names = TRUE
+  )
+  
+  if(length(png_files) == 0){
+    warning("No PNG files found in ", png_dir)
+    return(invisible(NULL))
+  }
+  
+  labs <- labels[seq_along(png_files)]
+  
+  img_grobs <- mapply(
+    
+    function(f, lab){
+      
+      img <- rasterGrob(
+        readPNG(f),
+        width = unit(1, "npc"),
+        height = unit(1, "npc"),
+        interpolate = FALSE
+      )
+      
+      grobTree(
+        img,
+        textGrob(
+          lab,
+          x = unit(0.04,"npc"),
+          y = unit(0.96,"npc"),
+          just = c("left","top"),
+          gp = gpar(
+            fontsize = fontsize,
+            fontface = "bold"
+          )
+        )
+      )
+      
+    },
+    
+    png_files,
+    labs,
+    SIMPLIFY = FALSE
+  )
+  
+  p <- arrangeGrob(
+    grobs = img_grobs,
+    ncol = ncol,
+    padding = unit(0,"mm")
+  )
+  
+  png(
+    outfile,
+    width = width,
+    height = height,
+    units = "in",
+    res = 300
+  )
+  
+  grid.draw(p)
+  
+  dev.off()
+  
+  invisible(outfile)
+  
+}
